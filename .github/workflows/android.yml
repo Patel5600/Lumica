@@ -29,11 +29,10 @@ jobs:
           npx cap add android
           npx cap sync android
           cd android
-          rm -rf .gradle
-          rm -rf .idea
-          rm -rf build
-          rm -rf app/build
+          rm -rf .gradle .idea build app/build
           chmod +x gradlew
+          ls -la /tmp/gradle-home/caches/jars-9/18366b31678c0171857be093a3b8ec22/ || echo "Cache path does not exist"
+          df -h /tmp
           ./gradlew clean assembleDebug -Dgradle.user.home=../gradle-cache --refresh-dependencies --no-daemon --info
       - name: Upload APK
         uses: actions/upload-artifact@v4
