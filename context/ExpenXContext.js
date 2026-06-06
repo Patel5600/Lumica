@@ -1,4 +1,5 @@
 import React, { createContext, useContext, useState, useEffect, useMemo } from 'react';
+import { Preferences } from '@capacitor/preferences';
 
 const ExpenXContext = createContext();
 
@@ -9,58 +10,41 @@ const BUDGETS_KEY = 'expenx_budgets';
 export function ExpenXProvider({ children }) {
   const [transactions, setTransactions] = useState([]);
   const [settings, setSettings] = useState({ currency: 'USD', symbol: '$' });
-  const [budgets, setBudgets] = useState({}); // { category: limit }
+  const [budgets, setBudgets] = useState({});
   const [isLoaded, setIsLoaded] = useState(false);
 
-  // Load from localStorage on mount
+  // Load from Preferences on mount
   useEffect(() => {
-    const savedTransactions = localStorage.getItem(STORAGE_KEY);
-    const savedSettings = localStorage.getItem(SETTINGS_KEY);
-    const savedBudgets = localStorage.getItem(BUDGETS_KEY);
-    
-    if (savedTransactions) {
-      try {
-        setTransactions(JSON.parse(savedTransactions));
-      } catch (e) {
-        console.error('Failed to parse transactions', e);
-      }
+    async function loadData() {
+        const { value: savedTransactions } = await Preferences.get({ key: STORAGE_KEY });
+        const { value: savedSettings } = await Preferences.get({ key: SETTINGS_KEY });
+        const { value: savedBudgets } = await Preferences.get({ key: BUDGETS_KEY });
+        
+        if (savedTransactions) setTransactions(JSON.parse(savedTransactions));
+        if (savedSettings) setSettings(JSON.parse(savedSettings));
+        if (savedBudgets) setBudgets(JSON.parse(savedBudgets));
+        
+        setIsLoaded(true);
     }
-    
-    if (savedSettings) {
-      try {
-        setSettings(JSON.parse(savedSettings));
-      } catch (e) {
-        console.error('Failed to parse settings', e);
-      }
-    }
-
-    if (savedBudgets) {
-        try {
-          setBudgets(JSON.parse(savedBudgets));
-        } catch (e) {
-          console.error('Failed to parse budgets', e);
-        }
-    }
-    
-    setIsLoaded(true);
+    loadData();
   }, []);
 
-  // Save to localStorage whenever data changes
+  // Save to Preferences whenever data changes
   useEffect(() => {
     if (isLoaded) {
-      localStorage.setItem(STORAGE_KEY, JSON.stringify(transactions));
+      Preferences.set({ key: STORAGE_KEY, value: JSON.stringify(transactions) });
     }
   }, [transactions, isLoaded]);
 
   useEffect(() => {
     if (isLoaded) {
-      localStorage.setItem(SETTINGS_KEY, JSON.stringify(settings));
+      Preferences.set({ key: SETTINGS_KEY, value: JSON.stringify(settings) });
     }
   }, [settings, isLoaded]);
 
   useEffect(() => {
     if (isLoaded) {
-      localStorage.setItem(BUDGETS_KEY, JSON.stringify(budgets));
+      Preferences.set({ key: BUDGETS_KEY, value: JSON.stringify(budgets) });
     }
   }, [budgets, isLoaded]);
 

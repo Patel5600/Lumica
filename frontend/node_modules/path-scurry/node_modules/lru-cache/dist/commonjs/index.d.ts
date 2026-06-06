@@ -1,8 +1,6 @@
 /**
  * @module LRUCache
  */
-import type { Perf } from './perf.js';
-export type { Perf } from './perf.js';
 declare const TYPE: unique symbol;
 export type PosInt = number & {
     [TYPE]: 'Positive Integer';
@@ -78,20 +76,6 @@ export declare namespace LRUCache {
      */
     type Disposer<K, V> = (value: V, key: K, reason: DisposeReason) => void;
     /**
-     * The reason why an item was added to the cache, passed
-     * to the {@link Inserter} methods.
-     *
-     * - `add`: the item was not found in the cache, and was added
-     * - `update`: the item was in the cache, with the same value provided
-     * - `replace`: the item was in the cache, and replaced
-     */
-    type InsertReason = 'add' | 'update' | 'replace';
-    /**
-     * A method called upon item insertion, passed as the
-     * {@link OptionsBase.insert}
-     */
-    type Inserter<K, V> = (value: V, key: K, reason: InsertReason) => void;
-    /**
      * A function that returns the effective calculated size
      * of an entry in the cache.
      */
@@ -118,16 +102,8 @@ export declare namespace LRUCache {
      *
      * The `status` option should be a plain JavaScript object. The following
      * fields will be set on it appropriately, depending on the situation.
-     *
-     * These objects are also the context objects passed to listeners on the
-     * `lru-cache:metrics` diagnostic channel, and the `lru-cache` tracing
-     * channels, in platforms that support them.
      */
-    interface Status<K, V, FC = unknown> {
-        /**
-         * The operation being performed
-         */
-        op?: 'get' | 'set' | 'memo' | 'fetch' | 'delete' | 'has' | 'peek';
+    interface Status<V> {
         /**
          * The status of a set() operation.
          *
@@ -136,37 +112,7 @@ export declare namespace LRUCache {
          * - replace: the item was in the cache, and replaced
          * - miss: the item was not added to the cache for some reason
          */
-        set?: 'add' | 'update' | 'replace' | 'miss' | 'deleted';
-        /**
-         * The status of a delete() operation.
-         */
-        delete?: LRUCache.DisposeReason;
-        /**
-         * The result of a peek() operation
-         *
-         * - hit: the item was found and returned
-         * - stale: the item is in the cache, but past its ttl and not returned
-         * - miss: item not in the cache
-         */
-        peek?: 'hit' | 'miss' | 'stale';
-        /**
-         * The status of a memo() operation.
-         *
-         * - 'hit': the item was found in the cache and returned
-         * - 'miss': the `memoMethod` function was called
-         */
-        memo?: 'hit' | 'miss';
-        /**
-         * The `context` option provided to a memo or fetch operation
-         *
-         * In practice, of course, this will be the same type as the `FC`
-         * fetch context param used to instantiate the LRUCache, but the
-         * convolutions of threading that through would get quite complicated,
-         * and preclude forcing/forbidding the passing of a `context` param
-         * where it is/isn't expected, which is more valuable for error
-         * prevention.
-         */
-        context?: unknown;
+        set?: 'add' | 'update' | 'replace' | 'miss';
         /**
          * the ttl stored for the item, or undefined if ttls are not used.
          */
@@ -197,15 +143,8 @@ export declare namespace LRUCache {
          */
         maxEntrySizeExceeded?: true;
         /**
-         * The key that was set or retrieved
-         */
-        key?: K;
-        /**
-         * The value that was set
-         */
-        value?: V;
-        /**
-         * The old value, specified in the case of `set:'replace'`
+         * The old value, specified in the case of `set:'update'` or
+         * `set:'replace'`
          */
         oldValue?: V;
         /**
@@ -232,10 +171,6 @@ export declare namespace LRUCache {
          */
         fetch?: 'get' | 'inflight' | 'miss' | 'hit' | 'stale' | 'refresh';
         /**
-         * `forceRefresh` option was used for either a fetch or memo operation
-         */
-        forceRefresh?: boolean;
-        /**
          * The {@link OptionsBase.fetchMethod} was called
          */
         fetchDispatched?: true;
@@ -256,7 +191,7 @@ export declare namespace LRUCache {
         fetchAborted?: true;
         /**
          * The abort signal received was ignored, and the fetch was allowed to
-         * continue in the background.
+         * continue.
          */
         fetchAbortIgnored?: true;
         /**
@@ -272,27 +207,15 @@ export declare namespace LRUCache {
          *
          * - fetching: The item is currently being fetched.  If a previous value
          *   is present and allowed, that will be returned.
-         * - stale: The item is in the cache, and is stale. If it was returned,
-         *   then the `returnedStale` flag will be set.
-         * - stale-fetching: The value is being fetched in the background, but is
-         *   currently stale. If the stale value was returned, then the
-         *   `returnedStale` flag will be set.
+         * - stale: The item is in the cache, and is stale.
          * - hit: the item is in the cache
          * - miss: the item is not in the cache
          */
-        get?: 'stale' | 'hit' | 'miss' | 'fetching' | 'stale-fetching';
+        get?: 'stale' | 'hit' | 'miss';
         /**
          * A fetch or get operation returned a stale value.
          */
         returnedStale?: true;
-        /**
-         * A tracingChannel trace was started for this operation
-         */
-        trace?: boolean;
-        /**
-         * A reference to the cache instance associated with this operation
-         */
-        cache?: LRUCache<K & {}, V & {}, FC>;
     }
     /**
      * options which override the options set in the LRUCache constructor
@@ -310,7 +233,7 @@ export declare namespace LRUCache {
      * the fetchMethod is called.
      */
     interface FetcherFetchOptions<K, V, FC = unknown> extends Pick<OptionsBase<K, V, FC>, 'allowStale' | 'updateAgeOnGet' | 'noDeleteOnStaleGet' | 'sizeCalculation' | 'ttl' | 'noDisposeOnSet' | 'noUpdateTTL' | 'noDeleteOnFetchRejection' | 'allowStaleOnFetchRejection' | 'ignoreFetchAbort' | 'allowStaleOnFetchAbort'> {
-        status?: Status<K, V, FC>;
+        status?: Status<V>;
         size?: Size;
     }
     /**
@@ -332,7 +255,7 @@ export declare namespace LRUCache {
          */
         context?: FC;
         signal?: AbortSignal;
-        status?: Status<K, V, FC>;
+        status?: Status<V>;
     }
     /**
      * Options provided to {@link LRUCache#fetch} when the FC type is something
@@ -345,8 +268,8 @@ export declare namespace LRUCache {
      * Options provided to {@link LRUCache#fetch} when the FC type is
      * `undefined` or `void`
      */
-    interface FetchOptionsNoContext<K, V, FC extends undefined | void = undefined> extends FetchOptions<K, V, FC> {
-        context?: FC;
+    interface FetchOptionsNoContext<K, V> extends FetchOptions<K, V, undefined> {
+        context?: undefined;
     }
     interface MemoOptions<K, V, FC = unknown> extends Pick<OptionsBase<K, V, FC>, 'allowStale' | 'updateAgeOnGet' | 'noDeleteOnStaleGet' | 'sizeCalculation' | 'ttl' | 'noDisposeOnSet' | 'noUpdateTTL' | 'noDeleteOnFetchRejection' | 'allowStaleOnFetchRejection' | 'ignoreFetchAbort' | 'allowStaleOnFetchAbort'> {
         /**
@@ -363,7 +286,7 @@ export declare namespace LRUCache {
          * be required.
          */
         context?: FC;
-        status?: Status<K, V, FC>;
+        status?: Status<V>;
     }
     /**
      * Options provided to {@link LRUCache#memo} when the FC type is something
@@ -376,8 +299,8 @@ export declare namespace LRUCache {
      * Options provided to {@link LRUCache#memo} when the FC type is
      * `undefined` or `void`
      */
-    interface MemoOptionsNoContext<K, V, FC extends undefined | void = undefined> extends MemoOptions<K, V, FC> {
-        context?: FC;
+    interface MemoOptionsNoContext<K, V> extends MemoOptions<K, V, undefined> {
+        context?: undefined;
     }
     /**
      * Options provided to the
@@ -397,7 +320,7 @@ export declare namespace LRUCache {
      *
      * This is the union of {@link GetOptions} and {@link SetOptions}, plus
      * {@link MemoOptions.forceRefresh}, and
-     * {@link MemoOptions.context}
+     * {@link MemoerOptions.context}
      *
      * Any of these may be modified in the {@link OptionsBase.memoMethod}
      * function, but the {@link GetOptions} fields will of course have no
@@ -405,7 +328,7 @@ export declare namespace LRUCache {
      * the memoMethod is called.
      */
     interface MemoizerMemoOptions<K, V, FC = unknown> extends Pick<OptionsBase<K, V, FC>, 'allowStale' | 'updateAgeOnGet' | 'noDeleteOnStaleGet' | 'sizeCalculation' | 'ttl' | 'noDisposeOnSet' | 'noUpdateTTL'> {
-        status?: Status<K, V, FC>;
+        status?: Status<V>;
         size?: Size;
         start?: Milliseconds;
     }
@@ -413,19 +336,18 @@ export declare namespace LRUCache {
      * Options that may be passed to the {@link LRUCache#has} method.
      */
     interface HasOptions<K, V, FC> extends Pick<OptionsBase<K, V, FC>, 'updateAgeOnHas'> {
-        status?: Status<K, V, FC>;
+        status?: Status<V>;
     }
     /**
      * Options that may be passed to the {@link LRUCache#get} method.
      */
     interface GetOptions<K, V, FC> extends Pick<OptionsBase<K, V, FC>, 'allowStale' | 'updateAgeOnGet' | 'noDeleteOnStaleGet'> {
-        status?: Status<K, V, FC>;
+        status?: Status<V>;
     }
     /**
      * Options that may be passed to the {@link LRUCache#peek} method.
      */
     interface PeekOptions<K, V, FC> extends Pick<OptionsBase<K, V, FC>, 'allowStale'> {
-        status?: Status<K, V, FC>;
     }
     /**
      * Options that may be passed to the {@link LRUCache#set} method.
@@ -446,7 +368,7 @@ export declare namespace LRUCache {
          * method is in use.
          */
         start?: Milliseconds;
-        status?: Status<K, V, FC>;
+        status?: Status<V>;
     }
     /**
      * The type signature for the {@link OptionsBase.fetchMethod} option.
@@ -634,17 +556,6 @@ export declare namespace LRUCache {
          */
         dispose?: Disposer<K, V>;
         /**
-         * Function that is called when new items are inserted into the cache,
-         * as `onInsert(value, key, reason)`.
-         *
-         * This can be useful if you need to perform actions when an item is
-         * added, such as logging or tracking insertions.
-         *
-         * Unlike some other options, this may _not_ be overridden by passing
-         * an option to `set()`, for performance and consistency reasons.
-         */
-        onInsert?: Inserter<K, V>;
-        /**
          * The same as {@link OptionsBase.dispose}, but called *after* the entry
          * is completely removed and the cache is once again in a clean state.
          *
@@ -699,20 +610,6 @@ export declare namespace LRUCache {
          * though for most cases, only minimally.
          */
         maxSize?: Size;
-        /**
-         * The effective size for background fetch promises.
-         *
-         * This has no effect unless `maxSize` and `sizeCalculation` are used,
-         * and a {@link LRUCache.OptionsBase.fetchMethod} is provided to
-         * support {@link LRUCache#fetch}.
-         *
-         * If a stale value is present in the cache, then the effective size of
-         * the background fetch is the size of the stale item it will eventually
-         * replace. If not, then this value is used as its effective size.
-         *
-         * @default 1
-         */
-        backgroundFetchSize?: number;
         /**
          * The maximum allowed size for any single item in the cache.
          *
@@ -899,15 +796,6 @@ export declare namespace LRUCache {
          * call to {@link LRUCache#fetch}.
          */
         ignoreFetchAbort?: boolean;
-        /**
-         * In some cases, you may want to swap out the performance/Date object
-         * used for TTL tracking. This should almost certainly NOT be done in
-         * production environments!
-         *
-         * This value defaults to `global.performance` if it has a `now()` method,
-         * or the `global.Date` object otherwise.
-         */
-        perf?: Perf;
     }
     interface OptionsMaxLimit<K, V, FC> extends OptionsBase<K, V, FC> {
         max: Count;
@@ -949,12 +837,8 @@ export declare namespace LRUCache {
  *
  * Changing any of these will alter the defaults for subsequent method calls.
  */
-export declare class LRUCache<K extends {}, V extends {}, FC = unknown> {
+export declare class LRUCache<K extends {}, V extends {}, FC = unknown> implements Map<K, V> {
     #private;
-    /**
-     * {@link LRUCache.OptionsBase.perf}
-     */
-    get perf(): Perf;
     /**
      * {@link LRUCache.OptionsBase.ttl}
      */
@@ -1015,8 +899,6 @@ export declare class LRUCache<K extends {}, V extends {}, FC = unknown> {
      * {@link LRUCache.OptionsBase.ignoreFetchAbort}
      */
     ignoreFetchAbort: boolean;
-    /** {@link LRUCache.OptionsBase.backgroundFetchSize} */
-    backgroundFetchSize: number;
     /**
      * Do not call this method unless you need to inspect the
      * inner workings of the cache.  If anything returned by this
@@ -1029,7 +911,6 @@ export declare class LRUCache<K extends {}, V extends {}, FC = unknown> {
     static unsafeExposeInternals<K extends {}, V extends {}, FC extends unknown = unknown>(c: LRUCache<K, V, FC>): {
         starts: ZeroArray | undefined;
         ttls: ZeroArray | undefined;
-        autopurgeTimers: (NodeJS.Timeout | undefined)[] | undefined;
         sizes: ZeroArray | undefined;
         keyMap: Map<K, number>;
         keyList: (K | undefined)[];
@@ -1039,8 +920,8 @@ export declare class LRUCache<K extends {}, V extends {}, FC = unknown> {
         readonly head: Index;
         readonly tail: Index;
         free: StackLike;
-        isBackgroundFetch: (p: unknown) => p is BackgroundFetch<V>;
-        backgroundFetch: (k: K, index: number | undefined, options: LRUCache.FetchOptions<K, V, FC>, context: unknown) => BackgroundFetch<V>;
+        isBackgroundFetch: (p: any) => boolean;
+        backgroundFetch: (k: K, index: number | undefined, options: LRUCache.FetchOptions<K, V, FC>, context: any) => BackgroundFetch<V>;
         moveToTail: (index: number) => void;
         indexes: (options?: {
             allowStale: boolean;
@@ -1076,10 +957,6 @@ export declare class LRUCache<K extends {}, V extends {}, FC = unknown> {
      */
     get dispose(): LRUCache.Disposer<K, V> | undefined;
     /**
-     * {@link LRUCache.OptionsBase.onInsert} (read-only)
-     */
-    get onInsert(): LRUCache.Inserter<K, V> | undefined;
-    /**
      * {@link LRUCache.OptionsBase.disposeAfter} (read-only)
      */
     get disposeAfter(): LRUCache.Disposer<K, V> | undefined;
@@ -1100,7 +977,7 @@ export declare class LRUCache<K extends {}, V extends {}, FC = unknown> {
      * Return a generator yielding `[key, value]` pairs,
      * in order from least recently used to most recently used.
      */
-    rentries(): Generator<(K | V)[], void, unknown>;
+    rentries(): Generator<(K | V | BackgroundFetch<V> | undefined)[], void, unknown>;
     /**
      * Return a generator yielding the keys in the cache,
      * in order from most recently used to least recently used.
@@ -1124,7 +1001,7 @@ export declare class LRUCache<K extends {}, V extends {}, FC = unknown> {
      * Return a generator yielding the values in the cache,
      * in order from least recently used to most recently used.
      */
-    rvalues(): Generator<V | undefined, void, unknown>;
+    rvalues(): Generator<V | BackgroundFetch<V> | undefined, void, unknown>;
     /**
      * Iterating over the cache itself yields the same results as
      * {@link LRUCache.entries}
@@ -1152,12 +1029,12 @@ export declare class LRUCache<K extends {}, V extends {}, FC = unknown> {
      *
      * Does not update age or recenty of use, or iterate over stale values.
      */
-    forEach(fn: (v: V, k: K, self: LRUCache<K, V, FC>) => unknown, thisp?: unknown): void;
+    forEach(fn: (v: V, k: K, self: LRUCache<K, V, FC>) => any, thisp?: any): void;
     /**
      * The same as {@link LRUCache.forEach} but items are iterated over in
      * reverse order.  (ie, less recently used items are iterated over first.)
      */
-    rforEach(fn: (v: V, k: K, self: LRUCache<K, V, FC>) => unknown, thisp?: unknown): void;
+    rforEach(fn: (v: V, k: K, self: LRUCache<K, V, FC>) => any, thisp?: any): void;
     /**
      * Delete any stale entries. Returns true if anything was removed,
      * false otherwise.
@@ -1178,7 +1055,7 @@ export declare class LRUCache<K extends {}, V extends {}, FC = unknown> {
     info(key: K): LRUCache.Entry<V> | undefined;
     /**
      * Return an array of [key, {@link LRUCache.Entry}] tuples which can be
-     * passed to {@link LRUCache#load}.
+     * passed to {@link LRLUCache#load}.
      *
      * The `start` fields are calculated relative to a portable `Date.now()`
      * timestamp, even if `performance.now()` is available.
@@ -1230,7 +1107,7 @@ export declare class LRUCache<K extends {}, V extends {}, FC = unknown> {
      * If the value is `undefined`, then this is an alias for
      * `cache.delete(key)`. `undefined` is never stored in the cache.
      */
-    set(k: K, v: V | undefined, setOptions?: LRUCache.SetOptions<K, V, FC>): this;
+    set(k: K, v: V | BackgroundFetch<V> | undefined, setOptions?: LRUCache.SetOptions<K, V, FC>): this;
     /**
      * Evict the least recently used item, returning its value or
      * `undefined` if cache is empty.
@@ -1346,23 +1223,23 @@ export declare class LRUCache<K extends {}, V extends {}, FC = unknown> {
      * the same time, because they're both waiting on the same
      * underlying fetchMethod response.
      */
-    fetch(k: K, fetchOptions: unknown extends FC ? LRUCache.FetchOptions<K, V, FC> : FC extends undefined | void ? LRUCache.FetchOptionsNoContext<K, V, FC> : LRUCache.FetchOptionsWithContext<K, V, FC>): Promise<undefined | V>;
-    fetch(k: unknown extends FC ? K : FC extends undefined | void ? K : never, fetchOptions?: unknown extends FC ? LRUCache.FetchOptions<K, V, FC> : FC extends undefined | void ? LRUCache.FetchOptionsNoContext<K, V, FC> : never): Promise<undefined | V>;
+    fetch(k: K, fetchOptions: unknown extends FC ? LRUCache.FetchOptions<K, V, FC> : FC extends undefined | void ? LRUCache.FetchOptionsNoContext<K, V> : LRUCache.FetchOptionsWithContext<K, V, FC>): Promise<undefined | V>;
+    fetch(k: unknown extends FC ? K : FC extends undefined | void ? K : never, fetchOptions?: unknown extends FC ? LRUCache.FetchOptions<K, V, FC> : FC extends undefined | void ? LRUCache.FetchOptionsNoContext<K, V> : never): Promise<undefined | V>;
     /**
      * In some cases, `cache.fetch()` may resolve to `undefined`, either because
      * a {@link LRUCache.OptionsBase#fetchMethod} was not provided (turning
      * `cache.fetch(k)` into just an async wrapper around `cache.get(k)`) or
      * because `ignoreFetchAbort` was specified (either to the constructor or
      * in the {@link LRUCache.FetchOptions}). Also, the
-     * {@link LRUCache.OptionsBase.fetchMethod} may return `undefined` or `void`, making
+     * {@link OptionsBase.fetchMethod} may return `undefined` or `void`, making
      * the test even more complicated.
      *
      * Because inferring the cases where `undefined` might be returned are so
      * cumbersome, but testing for `undefined` can also be annoying, this method
      * can be used, which will reject if `this.fetch()` resolves to undefined.
      */
-    forceFetch(k: K, fetchOptions: unknown extends FC ? LRUCache.FetchOptions<K, V, FC> : FC extends undefined | void ? LRUCache.FetchOptionsNoContext<K, V, FC> : LRUCache.FetchOptionsWithContext<K, V, FC>): Promise<V>;
-    forceFetch(k: unknown extends FC ? K : FC extends undefined | void ? K : never, fetchOptions?: unknown extends FC ? LRUCache.FetchOptions<K, V, FC> : FC extends undefined | void ? LRUCache.FetchOptionsNoContext<K, V, FC> : never): Promise<V>;
+    forceFetch(k: K, fetchOptions: unknown extends FC ? LRUCache.FetchOptions<K, V, FC> : FC extends undefined | void ? LRUCache.FetchOptionsNoContext<K, V> : LRUCache.FetchOptionsWithContext<K, V, FC>): Promise<V>;
+    forceFetch(k: unknown extends FC ? K : FC extends undefined | void ? K : never, fetchOptions?: unknown extends FC ? LRUCache.FetchOptions<K, V, FC> : FC extends undefined | void ? LRUCache.FetchOptionsNoContext<K, V> : never): Promise<V>;
     /**
      * If the key is found in the cache, then this is equivalent to
      * {@link LRUCache#get}. If not, in the cache, then calculate the value using
@@ -1377,8 +1254,8 @@ export declare class LRUCache<K extends {}, V extends {}, FC = unknown> {
      * relevant in the course of fetching the data. It is only relevant for the
      * course of a single `memo()` operation, and discarded afterwards.
      */
-    memo(k: K, memoOptions: unknown extends FC ? LRUCache.MemoOptions<K, V, FC> : FC extends undefined | void ? LRUCache.MemoOptionsNoContext<K, V, FC> : LRUCache.MemoOptionsWithContext<K, V, FC>): V;
-    memo(k: unknown extends FC ? K : FC extends undefined | void ? K : never, memoOptions?: unknown extends FC ? LRUCache.MemoOptions<K, V, FC> : FC extends undefined | void ? LRUCache.MemoOptionsNoContext<K, V, FC> : never): V;
+    memo(k: K, memoOptions: unknown extends FC ? LRUCache.MemoOptions<K, V, FC> : FC extends undefined | void ? LRUCache.MemoOptionsNoContext<K, V> : LRUCache.MemoOptionsWithContext<K, V, FC>): V;
+    memo(k: unknown extends FC ? K : FC extends undefined | void ? K : never, memoOptions?: unknown extends FC ? LRUCache.MemoOptions<K, V, FC> : FC extends undefined | void ? LRUCache.MemoOptionsNoContext<K, V> : never): V;
     /**
      * Return a value from the cache. Will update the recency of the cache
      * entry found.
