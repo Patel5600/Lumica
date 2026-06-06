@@ -35,7 +35,7 @@ jobs:
           fi
           rm -rf .gradle .idea build app/build
           chmod +x gradlew
-          ./gradlew clean assembleDebug -I ../gradle-init.gradle -Dgradle.user.home=../gradle-cache --refresh-dependencies --no-daemon --info
+          ./gradlew clean assembleDebug -I ../../gradle-init.gradle -Dgradle.user.home=../gradle-cache --refresh-dependencies --no-daemon --info
       - name: Upload APK
         uses: actions/upload-artifact@v4
         with:
