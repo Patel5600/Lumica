@@ -30,6 +30,9 @@ jobs:
           npx cap sync android
           cd android
           rm -rf .gradle
+          rm -rf .idea
+          rm -rf build
+          rm -rf app/build
           chmod +x gradlew
           ./gradlew clean assembleDebug -Dgradle.user.home=/tmp/gradle-home --no-daemon --info
       - name: Upload APK
