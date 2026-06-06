@@ -30,7 +30,7 @@ jobs:
           npx cap sync android
           cd android
           chmod +x gradlew
-          ./gradlew clean assembleDebug
+          ./gradlew clean assembleDebug -Dgradle.user.home=.gradle-tmp
       - name: Upload APK
         uses: actions/upload-artifact@v4
         with:
