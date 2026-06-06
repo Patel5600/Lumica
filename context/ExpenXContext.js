@@ -49,7 +49,7 @@ export function ExpenXProvider({ children }) {
 
   const addTransaction = (transaction) => {
     const newTransaction = {
-      id: crypto.randomUUID(),
+      id: Math.random().toString(36).substring(2, 15) + Math.random().toString(36).substring(2, 15),
       timestamp: new Date().toISOString(),
       amount: 0,
       currency: settings.currency,
