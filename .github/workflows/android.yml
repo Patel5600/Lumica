@@ -5,13 +5,13 @@ on:
       - main
 jobs:
   build:
-    runs-on: macos-latest
+    runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
-      - name: Set up JDK 21
+      - name: Set up JDK 17
         uses: actions/setup-java@v4
         with:
-          java-version: '21'
+          java-version: '17'
           distribution: 'temurin'
       - name: Setup Node.js
         uses: actions/setup-node@v4
@@ -29,9 +29,13 @@ jobs:
           npx cap add android
           npx cap sync android
           cd android
+          # Ensure wrapper exists, if not, generate it (version compatible with Capacitor 6)
+          if [ ! -f "gradlew" ]; then
+            gradle wrapper --gradle-version 8.7
+          fi
           rm -rf .gradle .idea build app/build
           chmod +x gradlew
-          gradle clean assembleDebug -I ../../gradle-init.gradle -Dgradle.user.home=../gradle-cache --refresh-dependencies --no-daemon --info
+          ./gradlew clean assembleDebug -I ../gradle-init.gradle -Dgradle.user.home=../gradle-cache --refresh-dependencies --no-daemon --info
       - name: Upload APK
         uses: actions/upload-artifact@v4
         with:
