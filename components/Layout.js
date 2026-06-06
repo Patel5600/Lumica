@@ -17,20 +17,20 @@ export default function Layout({ children }) {
   ];
 
   return (
-    <div className="flex flex-col min-h-screen bg-eggshell font-sans">
+    <div className="flex flex-col min-h-screen bg-eggshell">
       {/* Main Content */}
-      <main className="flex-1 pb-24">
+      <main className="flex-1 pb-32">
         {children}
       </main>
 
-      {/* Floating Action Button */}
+      {/* Elevated Floating Action Button */}
       <button 
         onClick={() => setIsCalcOpen(true)}
-        className="fixed bottom-20 left-1/2 transform -translate-x-1/2 w-16 h-16 bg-sunshade rounded-full flex items-center justify-center text-white shadow-lg active:scale-95 transition-transform z-50"
+        className="fixed bottom-24 left-1/2 transform -translate-x-1/2 w-16 h-16 bg-sunshade rounded-full flex items-center justify-center text-white ios-shadow active:scale-90 active:rotate-90 transition-all duration-300 z-50 border-4 border-eggshell"
         aria-label="Add Transaction"
       >
         <svg xmlns="http://www.w3.org/2000/svg" className="h-8 w-8" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v16m8-8H4" />
+          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={3} d="M12 4v16m8-8H4" />
         </svg>
       </button>
 
@@ -41,16 +41,16 @@ export default function Layout({ children }) {
         onSave={addTransaction} 
       />
 
-      {/* Bottom Navigation */}
-      <nav className="fixed bottom-0 left-0 right-0 bg-white native-shadow h-20 flex items-center justify-around px-2 z-40">
+      {/* Bottom Navigation - Native iOS Feel */}
+      <nav className="fixed bottom-0 left-0 right-0 bg-white/80 backdrop-blur-xl h-24 flex items-center justify-around px-4 z-40 border-t border-gray-100 rounded-t-[32px]">
         {navItems.map((item) => {
           const isActive = router.pathname === item.path;
           return (
-            <Link key={item.path} href={item.path} className={`flex flex-col items-center justify-center w-full h-full transition-colors ${isActive ? 'text-sunshade' : 'text-gray-400'}`}>
+            <Link key={item.path} href={item.path} className={`flex flex-col items-center justify-center w-full h-full transition-all duration-300 ${isActive ? 'text-sunshade scale-110' : 'text-gray-300'}`}>
               <svg xmlns="http://www.w3.org/2000/svg" className="h-6 w-6 mb-1" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d={item.icon} />
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={isActive ? 2.5 : 2} d={item.icon} />
               </svg>
-              <span className="text-xs font-medium">{item.label}</span>
+              <span className={`text-[10px] font-black uppercase tracking-widest ${isActive ? 'opacity-100' : 'opacity-0'}`}>{item.label}</span>
             </Link>
           );
         })}
