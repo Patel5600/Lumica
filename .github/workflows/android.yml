@@ -25,8 +25,8 @@ jobs:
         run: |
           npm install @capacitor/android
           cd frontend
-          npx cap add android --config capacitor.config.json
-          npx cap sync android --config capacitor.config.json
+          npx cap add android
+          npx cap sync android
           cd android
           ./gradlew assembleDebug
       - name: Upload APK
