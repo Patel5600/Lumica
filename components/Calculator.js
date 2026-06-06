@@ -15,6 +15,7 @@ export default function Calculator({ isOpen, onClose, onSave }) {
   const [display, setDisplay] = useState('0');
   const [category, setCategory] = useState(CATEGORIES[0]);
   const [type, setType] = useState('expense');
+  const [date, setDate] = useState(new Date().toISOString().split('T')[0]);
 
   if (!isOpen) return null;
 
@@ -23,7 +24,6 @@ export default function Calculator({ isOpen, onClose, onSave }) {
   };
 
   const handleOperator = (op) => {
-    // Only allow one operator at a time for simplicity
     if (/[+\-*/]$/.test(display)) {
       setDisplay(prev => prev.slice(0, -1) + op);
     } else {
@@ -55,14 +55,15 @@ export default function Calculator({ isOpen, onClose, onSave }) {
       amount: Math.abs(parseFloat(finalAmount)) || 0,
       category: category.name,
       type: type,
+      timestamp: new Date(date).toISOString()
     });
     setDisplay('0');
     onClose();
   };
 
   return (
-    <div className="fixed inset-0 bg-black/60 z-[100] flex flex-col justify-end transition-opacity duration-300">
-      <div className="bg-eggshell rounded-t-[40px] p-6 max-h-[95vh] overflow-y-auto shadow-2xl border-t border-white/20">
+    <div className="fixed inset-0 bg-black/60 z-[100] flex flex-col justify-end transition-opacity duration-300 backdrop-blur-sm">
+      <div className="bg-eggshell rounded-t-[40px] p-6 max-h-[95vh] overflow-y-auto shadow-2xl border-t border-white/20 animate-slide-up">
         <div className="flex justify-between items-center mb-6">
           <button onClick={onClose} className="text-gray-400 font-medium px-2">Cancel</button>
           <div className="flex bg-gray-200/50 backdrop-blur-md rounded-full p-1 border border-gray-300/30">
@@ -80,6 +81,16 @@ export default function Calculator({ isOpen, onClose, onSave }) {
             </button>
           </div>
           <button onClick={save} className="text-sunshade font-bold px-2">Save</button>
+        </div>
+
+        {/* Date Picker */}
+        <div className="mb-6">
+            <input 
+                type="date" 
+                value={date} 
+                onChange={(e) => setDate(e.target.value)}
+                className="w-full bg-white rounded-2xl p-4 text-sm font-bold text-gray-700 shadow-sm border border-gray-100"
+            />
         </div>
 
         {/* Display */}

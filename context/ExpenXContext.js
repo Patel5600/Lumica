@@ -4,16 +4,19 @@ const ExpenXContext = createContext();
 
 const STORAGE_KEY = 'expenx_transactions';
 const SETTINGS_KEY = 'expenx_settings';
+const BUDGETS_KEY = 'expenx_budgets';
 
 export function ExpenXProvider({ children }) {
   const [transactions, setTransactions] = useState([]);
   const [settings, setSettings] = useState({ currency: 'USD', symbol: '$' });
+  const [budgets, setBudgets] = useState({}); // { category: limit }
   const [isLoaded, setIsLoaded] = useState(false);
 
   // Load from localStorage on mount
   useEffect(() => {
     const savedTransactions = localStorage.getItem(STORAGE_KEY);
     const savedSettings = localStorage.getItem(SETTINGS_KEY);
+    const savedBudgets = localStorage.getItem(BUDGETS_KEY);
     
     if (savedTransactions) {
       try {
@@ -29,6 +32,14 @@ export function ExpenXProvider({ children }) {
       } catch (e) {
         console.error('Failed to parse settings', e);
       }
+    }
+
+    if (savedBudgets) {
+        try {
+          setBudgets(JSON.parse(savedBudgets));
+        } catch (e) {
+          console.error('Failed to parse budgets', e);
+        }
     }
     
     setIsLoaded(true);
@@ -46,6 +57,12 @@ export function ExpenXProvider({ children }) {
       localStorage.setItem(SETTINGS_KEY, JSON.stringify(settings));
     }
   }, [settings, isLoaded]);
+
+  useEffect(() => {
+    if (isLoaded) {
+      localStorage.setItem(BUDGETS_KEY, JSON.stringify(budgets));
+    }
+  }, [budgets, isLoaded]);
 
   const addTransaction = (transaction) => {
     const newTransaction = {
@@ -68,9 +85,14 @@ export function ExpenXProvider({ children }) {
     setSettings(prev => ({ ...prev, currency, symbol }));
   };
 
+  const updateBudget = (category, limit) => {
+    setBudgets(prev => ({ ...prev, [category]: limit }));
+  };
+
   const clearAllData = () => {
     if (confirm('Are you sure you want to clear ALL data? This cannot be undone.')) {
       setTransactions([]);
+      setBudgets({});
     }
   };
 
@@ -130,6 +152,8 @@ export function ExpenXProvider({ children }) {
     addTransaction,
     deleteTransaction,
     updateCurrency,
+    updateBudget,
+    budgets,
     clearAllData,
     exportData,
     totals,
