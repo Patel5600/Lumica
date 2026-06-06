@@ -1,5 +1,9 @@
-// Global dependency override to exclude and force stable BouncyCastle
+// Global dependency override to force stable BouncyCastle and use reliable repository
 allprojects {
+    repositories {
+        maven { url "https://repo1.maven.org/maven2/" }
+        google()
+    }
     configurations.all {
         exclude group: 'org.bouncycastle', module: 'bcprov-jdk18on'
     }
