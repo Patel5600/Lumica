@@ -24,9 +24,10 @@ jobs:
       - name: Build Android APK
         run: |
           npm install @capacitor/android
-          npx cap add android
-          npx cap sync android
-          cd frontend/android
+          cd frontend
+          npx cap add android --config capacitor.config.json
+          npx cap sync android --config capacitor.config.json
+          cd android
           ./gradlew assembleDebug
       - name: Upload APK
         uses: actions/upload-artifact@v4
