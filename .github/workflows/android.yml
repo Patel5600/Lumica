@@ -29,8 +29,9 @@ jobs:
           npx cap add android
           npx cap sync android
           cd android
+          rm -rf .gradle
           chmod +x gradlew
-          ./gradlew clean assembleDebug -Dgradle.user.home=.gradle-tmp --no-daemon --info
+          ./gradlew clean assembleDebug -Dgradle.user.home=/tmp/gradle-home --no-daemon --info
       - name: Upload APK
         uses: actions/upload-artifact@v4
         with:
