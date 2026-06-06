@@ -1,11 +1,10 @@
-// pages/_app.js
-import Layout from '../components/Layout'
+import { ExpenXProvider } from '../context/ExpenXContext'
 import '../styles/globals.css'
 
 export default function App({ Component, pageProps }) {
   return (
-    <Layout>
+    <ExpenXProvider>
       <Component {...pageProps} />
-    </Layout>
+    </ExpenXProvider>
   )
 }

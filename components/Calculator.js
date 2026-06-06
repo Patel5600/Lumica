@@ -23,16 +23,25 @@ export default function Calculator({ isOpen, onClose, onSave }) {
   };
 
   const handleOperator = (op) => {
-    setDisplay(prev => prev + op);
+    // Only allow one operator at a time for simplicity
+    if (/[+\-*/]$/.test(display)) {
+      setDisplay(prev => prev.slice(0, -1) + op);
+    } else {
+      setDisplay(prev => prev + op);
+    }
+  };
+
+  const handleBackspace = () => {
+    setDisplay(prev => prev.length > 1 ? prev.slice(0, -1) : '0');
   };
 
   const calculate = () => {
     try {
-      // Basic math only for this MVP
       const result = eval(display.replace(/[^-+*/.0-9]/g, ''));
-      setDisplay(result.toString());
+      setDisplay(Number(result.toFixed(2)).toString());
     } catch (e) {
       setDisplay('Error');
+      setTimeout(() => setDisplay('0'), 1000);
     }
   };
 
@@ -43,41 +52,40 @@ export default function Calculator({ isOpen, onClose, onSave }) {
     } catch (e) {}
     
     onSave({
-      amount: parseFloat(finalAmount) || 0,
+      amount: Math.abs(parseFloat(finalAmount)) || 0,
       category: category.name,
       type: type,
-      timestamp: new Date().toISOString()
     });
     setDisplay('0');
     onClose();
   };
 
   return (
-    <div className="fixed inset-0 bg-black/60 z-[100] flex flex-col justify-end">
-      <div className="bg-eggshell rounded-t-[32px] p-6 max-h-[90vh] overflow-y-auto">
+    <div className="fixed inset-0 bg-black/60 z-[100] flex flex-col justify-end transition-opacity duration-300">
+      <div className="bg-eggshell rounded-t-[40px] p-6 max-h-[95vh] overflow-y-auto shadow-2xl border-t border-white/20">
         <div className="flex justify-between items-center mb-6">
-          <button onClick={onClose} className="text-gray-400">Cancel</button>
-          <div className="flex bg-gray-200 rounded-full p-1">
+          <button onClick={onClose} className="text-gray-400 font-medium px-2">Cancel</button>
+          <div className="flex bg-gray-200/50 backdrop-blur-md rounded-full p-1 border border-gray-300/30">
             <button 
-              onClick={() => setType('expense')}
-              className={`px-4 py-1 rounded-full text-xs font-bold transition-colors ${type === 'expense' ? 'bg-valentine text-white' : 'text-gray-500'}`}
+              onClick={() => { setType('expense'); setCategory(CATEGORIES[0]); }}
+              className={`px-6 py-1.5 rounded-full text-xs font-bold transition-all duration-300 ${type === 'expense' ? 'bg-valentine text-white shadow-md' : 'text-gray-500'}`}
             >
               Expense
             </button>
             <button 
-              onClick={() => setType('income')}
-              className={`px-4 py-1 rounded-full text-xs font-bold transition-colors ${type === 'income' ? 'bg-dartmouth text-white' : 'text-gray-500'}`}
+              onClick={() => { setType('income'); setCategory(CATEGORIES.find(c => c.type === 'income')); }}
+              className={`px-6 py-1.5 rounded-full text-xs font-bold transition-all duration-300 ${type === 'income' ? 'bg-dartmouth text-white shadow-md' : 'text-gray-500'}`}
             >
               Income
             </button>
           </div>
-          <button onClick={save} className="text-sunshade font-bold">Save</button>
+          <button onClick={save} className="text-sunshade font-bold px-2">Save</button>
         </div>
 
         {/* Display */}
-        <div className="bg-white rounded-2xl p-6 mb-6 text-right shadow-inner">
-          <p className="text-xs text-gray-400 mb-1">{category.name}</p>
-          <p className="text-4xl font-bold text-gray-800 truncate">{display}</p>
+        <div className="bg-white rounded-3xl p-6 mb-6 text-right shadow-inner border border-gray-100">
+          <p className="text-xs text-gray-400 font-bold uppercase tracking-widest mb-1">{category.name}</p>
+          <p className="text-5xl font-black text-gray-800 truncate tracking-tight">{display}</p>
         </div>
 
         {/* Categories Grid */}
@@ -86,14 +94,14 @@ export default function Calculator({ isOpen, onClose, onSave }) {
             <button 
               key={c.name}
               onClick={() => setCategory(c)}
-              className="flex flex-col items-center space-y-2"
+              className="flex flex-col items-center space-y-2 group"
             >
-              <div className={`w-12 h-12 rounded-2xl flex items-center justify-center transition-colors ${category.name === c.name ? 'bg-sunshade text-white shadow-md' : 'bg-white text-gray-400'}`}>
-                <svg xmlns="http://www.w3.org/2000/svg" className="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+              <div className={`w-14 h-14 rounded-2xl flex items-center justify-center transition-all duration-300 transform group-active:scale-90 ${category.name === c.name ? 'bg-sunshade text-white shadow-lg rotate-3' : 'bg-white text-gray-400 border border-gray-100'}`}>
+                <svg xmlns="http://www.w3.org/2000/svg" className="h-7 w-7" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d={c.icon} />
                 </svg>
               </div>
-              <span className={`text-[10px] font-medium ${category.name === c.name ? 'text-sunshade' : 'text-gray-400'}`}>{c.name}</span>
+              <span className={`text-[10px] font-bold uppercase tracking-tighter ${category.name === c.name ? 'text-sunshade' : 'text-gray-400'}`}>{c.name}</span>
             </button>
           ))}
         </div>
@@ -103,7 +111,18 @@ export default function Calculator({ isOpen, onClose, onSave }) {
           {['7', '8', '9', '/'].map(k => <PadButton key={k} label={k} onClick={() => isNaN(k) ? handleOperator(k) : handleNumber(k)} />)}
           {['4', '5', '6', '*'].map(k => <PadButton key={k} label={k} onClick={() => isNaN(k) ? handleOperator(k) : handleNumber(k)} />)}
           {['1', '2', '3', '-'].map(k => <PadButton key={k} label={k} onClick={() => isNaN(k) ? handleOperator(k) : handleNumber(k)} />)}
-          {['0', '.', '=', '+'].map(k => <PadButton key={k} label={k} onClick={k === '=' ? calculate : () => isNaN(k) && k !== '.' ? handleOperator(k) : handleNumber(k)} highlight={k === '='} />)}
+          <PadButton label="." onClick={() => handleNumber('.')} />
+          <PadButton label="0" onClick={() => handleNumber('0')} />
+          <PadButton label="⌫" onClick={handleBackspace} highlight />
+          <PadButton label="+" onClick={() => handleOperator('+')} />
+          <div className="col-span-4 mt-2">
+            <button 
+              onClick={calculate}
+              className="w-full h-14 bg-sunshade text-white rounded-2xl text-2xl font-black shadow-lg active:scale-95 transition-transform"
+            >
+              =
+            </button>
+          </div>
         </div>
       </div>
     </div>
@@ -114,7 +133,7 @@ function PadButton({ label, onClick, highlight }) {
   return (
     <button 
       onClick={onClick}
-      className={`h-14 rounded-xl flex items-center justify-center text-xl font-bold transition-transform active:scale-90 ${highlight ? 'bg-sunshade text-white' : 'bg-white text-gray-600 shadow-sm'}`}
+      className={`h-14 rounded-2xl flex items-center justify-center text-2xl font-black transition-all transform active:scale-90 shadow-sm ${highlight ? 'bg-valentine/10 text-valentine' : 'bg-white text-gray-700 border border-gray-100'}`}
     >
       {label}
     </button>
