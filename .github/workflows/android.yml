@@ -23,6 +23,8 @@ jobs:
           npm run build
       - name: Build Android APK
         run: |
+          npm install @capacitor/android
+          npx cap add android
           npx cap sync android
           cd frontend/android
           ./gradlew assembleDebug
