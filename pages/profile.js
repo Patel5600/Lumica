@@ -1,5 +1,6 @@
 import Head from 'next/head';
 import { useExpenX } from '../hooks/useExpenX';
+import { useState } from 'react';
 
 const CURRENCIES = [
   { code: 'USD', symbol: '$', name: 'US Dollar' },
@@ -11,6 +12,7 @@ const CURRENCIES = [
 
 export default function Profile() {
   const { settings, updateCurrency, exportData, clearAllData } = useExpenX();
+  const [isCurrencyOpen, setIsCurrencyOpen] = useState(false);
 
   return (
     <div className="flex flex-col min-h-screen bg-eggshell">
@@ -38,19 +40,29 @@ export default function Profile() {
 
           <div className="space-y-6 pt-8 border-t border-gray-50">
             <div>
-              <label className="text-[10px] font-black text-gray-400 uppercase tracking-[0.2em] mb-4 block ml-1">Currency Configuration</label>
-              <div className="grid grid-cols-1 gap-3">
-                {CURRENCIES.map((c) => (
-                  <button 
-                    key={c.code}
-                    onClick={() => updateCurrency(c.code, c.symbol)}
-                    className={`flex items-center justify-between p-5 rounded-3xl transition-all duration-300 border ${settings.currency === c.code ? 'bg-sunshade/5 border-sunshade/20 text-sunshade shadow-sm' : 'bg-gray-50/50 border-transparent text-gray-600 active:bg-gray-100'}`}
-                  >
-                    <span className="font-bold">{c.name} ({c.code})</span>
-                    <span className="text-lg font-black">{c.symbol}</span>
-                  </button>
-                ))}
-              </div>
+              <button 
+                onClick={() => setIsCurrencyOpen(!isCurrencyOpen)}
+                className="w-full flex items-center justify-between p-5 bg-gray-50 rounded-3xl font-black text-gray-700 active:scale-[0.98] transition-all"
+              >
+                <span>Currency: {settings.symbol} ({settings.currency})</span>
+                <svg xmlns="http://www.w3.org/2000/svg" className={`h-5 w-5 transition-transform ${isCurrencyOpen ? 'rotate-180' : ''}`} fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
+                </svg>
+              </button>
+              {isCurrencyOpen && (
+                <div className="grid grid-cols-1 gap-3 mt-3 animate-fade-in">
+                    {CURRENCIES.map((c) => (
+                    <button 
+                        key={c.code}
+                        onClick={() => updateCurrency(c.code, c.symbol)}
+                        className={`flex items-center justify-between p-5 rounded-3xl transition-all duration-300 border ${settings.currency === c.code ? 'bg-sunshade/5 border-sunshade/20 text-sunshade shadow-sm' : 'bg-gray-50/50 border-transparent text-gray-600 active:bg-gray-100'}`}
+                    >
+                        <span className="font-bold">{c.name} ({c.code})</span>
+                        <span className="text-lg font-black">{c.symbol}</span>
+                    </button>
+                    ))}
+                </div>
+              )}
             </div>
 
             <div className="space-y-3 pt-4">

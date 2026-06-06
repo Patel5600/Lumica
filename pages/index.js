@@ -1,8 +1,44 @@
 import Head from 'next/head';
 import { useExpenX } from '../hooks/useExpenX';
+import { useState, useMemo } from 'react';
 
 export default function Records() {
-  const { groupedTransactions, totals, isLoaded, deleteTransaction, settings } = useExpenX();
+  const { transactions, totals, isLoaded, deleteTransaction, settings } = useExpenX();
+  
+  // Date filter state (YYYY-MM)
+  const [filterMonth, setFilterMonth] = useState(new Date().toISOString().slice(0, 7));
+
+  const filteredTransactions = useMemo(() => {
+    return transactions.filter(t => t.timestamp.startsWith(filterMonth));
+  }, [transactions, filterMonth]);
+
+  const groupedTransactions = useMemo(() => {
+    const groups = {};
+    filteredTransactions.forEach(t => {
+      const date = new Date(t.timestamp).toLocaleDateString(undefined, {
+        weekday: 'long',
+        month: 'short',
+        day: 'numeric',
+      });
+      if (!groups[date]) groups[date] = [];
+      groups[date].push(t);
+    });
+    return Object.entries(groups).map(([date, items]) => ({ date, items }));
+  }, [filteredTransactions]);
+
+  const filteredTotals = useMemo(() => {
+    return filteredTransactions.reduce((acc, t) => {
+      const amount = parseFloat(t.amount) || 0;
+      if (t.type === 'income') {
+        acc.income += amount;
+        acc.balance += amount;
+      } else {
+        acc.expense += amount;
+        acc.balance -= amount;
+      }
+      return acc;
+    }, { income: 0, expense: 0, balance: 0 });
+  }, [filteredTransactions]);
 
   if (!isLoaded) return <div className="p-10 text-center font-bold text-sunshade animate-pulse">ExpenX is loading...</div>;
 
@@ -12,31 +48,34 @@ export default function Records() {
         <title>ExpenX – Money Manager</title>
       </Head>
 
-      {/* Branded Header - iOS style soft shadow */}
+      {/* Branded Header */}
       <header className="bg-sunshade p-8 pb-14 text-white shadow-2xl rounded-b-[48px] relative z-10">
         <div className="flex justify-between items-center mb-6">
           <h1 className="text-2xl font-black tracking-tighter">ExpenX</h1>
-          <div className="bg-white/20 px-4 py-1.5 rounded-full backdrop-blur-md border border-white/30">
-            <span className="text-xs font-black uppercase tracking-widest">{new Date().toLocaleDateString(undefined, { month: 'short', year: 'numeric' })}</span>
-          </div>
+          <input 
+            type="month"
+            value={filterMonth}
+            onChange={(e) => setFilterMonth(e.target.value)}
+            className="bg-white/20 px-4 py-1.5 rounded-full backdrop-blur-md border border-white/30 text-xs font-black uppercase tracking-widest text-white cursor-pointer"
+          />
         </div>
         <div className="grid grid-cols-3 gap-6 text-center">
           <div className="bg-white/10 p-4 rounded-3xl backdrop-blur-sm border border-white/10">
             <p className="text-[10px] uppercase font-black tracking-widest opacity-70 mb-1">Income</p>
-            <p className="text-lg font-black text-white truncate">{settings.symbol}{totals.income.toLocaleString()}</p>
+            <p className="text-lg font-black text-white truncate">{settings.symbol}{filteredTotals.income.toLocaleString()}</p>
           </div>
           <div className="bg-white/10 p-4 rounded-3xl backdrop-blur-sm border border-white/10">
             <p className="text-[10px] uppercase font-black tracking-widest opacity-70 mb-1">Expense</p>
-            <p className="text-lg font-black text-white truncate">{settings.symbol}{totals.expense.toLocaleString()}</p>
+            <p className="text-lg font-black text-white truncate">{settings.symbol}{filteredTotals.expense.toLocaleString()}</p>
           </div>
           <div className="bg-white/10 p-4 rounded-3xl backdrop-blur-sm border border-white/10">
             <p className="text-[10px] uppercase font-black tracking-widest opacity-70 mb-1">Balance</p>
-            <p className="text-lg font-black text-white truncate">{settings.symbol}{totals.balance.toLocaleString()}</p>
+            <p className="text-lg font-black text-white truncate">{settings.symbol}{filteredTotals.balance.toLocaleString()}</p>
           </div>
         </div>
       </header>
 
-      {/* Transaction List - Card in Container design */}
+      {/* Transaction List */}
       <div className="flex-1 px-6 -mt-8 pb-24 relative z-20">
         {groupedTransactions.length === 0 ? (
           <div className="mt-24 text-center">
@@ -45,7 +84,7 @@ export default function Records() {
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
               </svg>
             </div>
-            <p className="text-gray-400 font-bold uppercase tracking-widest text-xs">No entries found</p>
+            <p className="text-gray-400 font-bold uppercase tracking-widest text-xs">No entries for this month</p>
           </div>
         ) : (
           <div className="space-y-8">
