@@ -1,0 +1,8 @@
+// Global dependency override to ensure BouncyCastle compatibility
+allprojects {
+    configurations.all {
+        resolutionStrategy {
+            force 'org.bouncycastle:bcprov-jdk18on:1.78'
+        }
+    }
+}
