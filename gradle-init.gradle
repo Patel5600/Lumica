@@ -1,8 +1,6 @@
-// Global dependency override to ensure BouncyCastle compatibility
+// Global dependency override to exclude and force stable BouncyCastle
 allprojects {
     configurations.all {
-        resolutionStrategy {
-            force 'org.bouncycastle:bcprov-jdk18on:1.78'
-        }
+        exclude group: 'org.bouncycastle', module: 'bcprov-jdk18on'
     }
 }
