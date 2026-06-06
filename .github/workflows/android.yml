@@ -19,14 +19,12 @@ jobs:
           node-version: '20'
       - name: Install dependencies
         run: |
-          cd frontend
           npm install
           npm run build
       - name: Build Android APK
         run: |
-          cd frontend
           npx cap sync android
-          cd android
+          cd frontend/android
           ./gradlew assembleDebug
       - name: Upload APK
         uses: actions/upload-artifact@v4
